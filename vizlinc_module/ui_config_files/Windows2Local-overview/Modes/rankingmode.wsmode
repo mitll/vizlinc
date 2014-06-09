@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode version="2.4">
+    <name unique="rankingmode"  />
+  <kind type="view" />
+  <state type="joined"  />
+  <constraints>
+    <path orientation="horizontal" number="1" weight="0.75"/>
+    <path orientation="vertical" number="1" weight="0.9106463878326996"/>
+    <path orientation="horizontal" number="20" weight="0.2001044932079415"/>
+    <path orientation="vertical" number="21" weight="0.5501043841336117"/>
+  </constraints>
+  <bounds x="0" y="0" width="0" height="0" />
+  <frame state="0"/>
+    <active-tc  id="FacetedSearchTopComponent"  prev-id="FacetedSearchTopComponent" />
+    <empty-behavior permanent="false"/>
+</mode>

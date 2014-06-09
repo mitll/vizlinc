@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?><module codename="org.gephi.plugins.layout.noverlap">
+    <module_version install_time="1393342496337" last="true" origin="installer" specification_version="1.1">
+        <file crc="2697227214" name="modules/org-gephi-plugins-layout-noverlap.jar"/>
+        <file crc="4267320055" name="config/Modules/org-gephi-plugins-layout-noverlap.xml"/>
+    </module_version>
+</module>

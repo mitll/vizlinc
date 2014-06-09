@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode version="2.4">
+    <name unique="anonymousMode_2"  />
+  <kind type="view" />
+  <state type="joined"  />
+  <constraints>
+    <path orientation="horizontal" number="1" weight="0.75"/>
+    <path orientation="vertical" number="1" weight="0.9106463878326996"/>
+    <path orientation="horizontal" number="60" weight="0.7"/>
+    <path orientation="vertical" number="40" weight="0.7"/>
+    <path orientation="horizontal" number="40" weight="0.8187789222271982"/>
+    <path orientation="vertical" number="0" weight="0.16084656084656085"/>
+  </constraints>
+  <bounds x="0" y="0" width="0" height="0" />
+  <frame state="0"/>
+    <active-tc  id="GraphToolsTopComponent"  prev-id="GraphToolsTopComponent" />
+    <empty-behavior permanent="false"/>
+</mode>

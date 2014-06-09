@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<windowmanager version="2.1">
+    <main-window>
+  <joined-properties
+   x="96"
+   y="78"
+   width="1728"
+   height="1044"
+   relative-x="0.0"
+   relative-y="0.0"
+   relative-width="0.0"
+   relative-height="0.0"
+   centered-horizontally="false"
+   centered-vertically="false"
+   maximize-if-width-below="0"
+   maximize-if-height-below="0"
+   frame-state="6"
+/>
+  <separated-properties
+   x="192"
+   y="116"
+   width="1536"
+   height="92"
+   relative-x="0.0"
+   relative-y="0.0"
+   relative-width="0.0"
+   relative-height="0.0"
+   centered-horizontally="false"
+   centered-vertically="false"
+   frame-state="0"
+/>
+  </main-window>
+    <editor-area state="joined" frame-state="0">
+  <constraints>
+  <path orientation="horizontal" number="1" weight="0.75" />
+  <path orientation="vertical" number="1" weight="0.9106463878326996" />
+  <path orientation="horizontal" number="60" weight="0.7" />
+  <path orientation="vertical" number="40" weight="0.7" />
+  <path orientation="horizontal" number="40" weight="0.8187789222271982" />
+  <path orientation="vertical" number="1" weight="0.834920634920635" />
+  </constraints>
+  <bounds x="633" y="278" width="806" height="510" />
+    </editor-area>
+    <screen width="1920" height="1200"/>
+    <active-mode name="editor"/>
+    <toolbar configuration="Standard" preferred-icon-size="24"/>
+    <tc-list>
+  <tc-id id="GraphTopComponent"/>
+  <tc-id id="MapTopComponent"/>
+  <tc-id id="PropertiesTopComponent"/>
+  <tc-id id="WordCloudTopComponent"/>
+  <tc-id id="DocListTopComponent"/>
+  <tc-id id="FacetedSearchTopComponent"/>
+  <tc-id id="GraphToolsTopComponent"/>
+  <tc-id id="VLQueryTopComponent"/>
+  <tc-id id="DocViewTopComponent"/>
+  <tc-id id="ContextTopComponent"/>
+    </tc-list>
+</windowmanager>

@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+OpenIDE-Module: vizlinc_module
+OpenIDE-Module-Install: edu/mit/ll/vizlinc/db/Installer.class
+OpenIDE-Module-Localizing-Bundle: edu/mit/ll/vizlinc/components/Bundle.properties
+OpenIDE-Module-Requires: org.openide.windows.WindowManager
+OpenIDE-Module-Specification-Version: 1.0
+

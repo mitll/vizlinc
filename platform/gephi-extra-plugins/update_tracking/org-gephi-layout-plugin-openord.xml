@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?><module codename="org.gephi.layout.plugin.openord">
+    <module_version install_time="1393342496317" last="true" origin="installer" specification_version="0.5">
+        <file crc="3409382460" name="modules/org-gephi-layout-plugin-openord.jar"/>
+        <file crc="878689446" name="config/Modules/org-gephi-layout-plugin-openord.xml"/>
+    </module_version>
+</module>
