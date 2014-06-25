@@ -6,4 +6,8 @@ The VizLinc Database repository is located at https://github.com/mitll/vizlinc_d
 
 The documentation for all of the VizLinc tools is located in the documentation forlder of this repository.  
 
+If you're interested in running the tools, begin by downloading the VizLinc release (https://github.com/mitll/vizlinc/releases/tag/v1.5) and the VizLinc Ingester release .  Unzip both releases.  First run the ingester executable; this is located at vizlinc_ingest\ingester\dist\vizlinc-ingester.exe.  The video guide on how to use the ingester can be found here: https://www.youtube.com/watch?v=rYsvVBLd3tw.  After you have run your documents through the ingest process, you're ready to interact with them via VizLinc.  The executable for VizLinc can be found in vizlinc\bin\vizlinc64.exe.  An introductory video for VizLinc is located at https://www.youtube.com/watch?v=6W5DJ4DoG4Q. 
+
+
+
 
