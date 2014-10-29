@@ -77,7 +77,7 @@ public final class VLQueryTopComponent extends TopComponent implements VLQueryLi
         setName(Bundle.CTL_VLQueryTopComponent());
         setToolTipText(Bundle.HINT_VLQueryTopComponent());
         putClientProperty(TopComponent.PROP_CLOSING_DISABLED, Boolean.TRUE);
-        putClientProperty(TopComponent.PROP_DRAGGING_DISABLED, Boolean.TRUE);
+        //putClientProperty(TopComponent.PROP_DRAGGING_DISABLED, Boolean.TRUE);
         putClientProperty(TopComponent.PROP_MAXIMIZATION_DISABLED, Boolean.TRUE);
         putClientProperty(TopComponent.PROP_SLIDING_DISABLED, Boolean.TRUE);
         putClientProperty(TopComponent.PROP_UNDOCKING_DISABLED, Boolean.TRUE);

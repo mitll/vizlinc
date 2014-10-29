@@ -24,8 +24,8 @@ import edu.mit.ll.vizlinc.components.PropertiesTopComponent;
 public class CircleWayPointRenderer implements WaypointRenderer
 {
 
-    public static final int MARKER_WIDTH = 10;
-    public static final int MARKER_HEIGHT = MARKER_WIDTH;
+    private int markerWidth = 10;
+    private int markerHeight = markerWidth;
     private BufferedImage img = null;
     private Map<Integer, Color> colorMap;
     private PropertiesTopComponent topComponent;
@@ -53,6 +53,12 @@ public class CircleWayPointRenderer implements WaypointRenderer
         {
             throw new RuntimeException("Couldn't read standard_waypoint.png", ex);
         }
+    }
+    
+    public void setMarkerSize(int px)
+    {
+        this.markerHeight = px;
+        this.markerWidth = px;
     }
 
     /**
@@ -165,16 +171,16 @@ public class CircleWayPointRenderer implements WaypointRenderer
             if (cw.getSelected())
             {
                 g.setColor(Color.WHITE);
-                g.fillOval(-5, -5, this.MARKER_WIDTH, this.MARKER_HEIGHT);
+                g.fillOval(-5, -5, this.markerWidth, this.markerHeight);
             } else
             {
                 g.setColor(getWaypointClusterColor(waypoint));
-                g.fillOval(-5, -5, this.MARKER_WIDTH, this.MARKER_HEIGHT);
+                g.fillOval(-5, -5, this.markerWidth, this.markerHeight);
             }
 
             g.setStroke(new BasicStroke(1f));
             g.setColor(Color.BLACK);
-            g.drawOval(-5, -5, this.MARKER_WIDTH, this.MARKER_HEIGHT);
+            g.drawOval(-5, -5, this.markerWidth, this.markerHeight);
             //}
         } else
         {
@@ -183,7 +189,7 @@ public class CircleWayPointRenderer implements WaypointRenderer
             g.setStroke(new BasicStroke(3f));
             g.setColor(getWaypointClusterColor(waypoint));
             //g.drawOval(-10,-10,20,20);
-            g.fillOval(-5, -5, this.MARKER_WIDTH, this.MARKER_HEIGHT);
+            g.fillOval(-5, -5, this.markerWidth, this.markerHeight);
             // g.setStroke(new BasicStroke(1f));
             // g.drawLine(-10,0,10,0);
             // g.drawLine(0,-10,0,10);
@@ -194,13 +200,14 @@ public class CircleWayPointRenderer implements WaypointRenderer
     private void paintNormal(Graphics2D g, Waypoint waypoint)
     {
         ClusterWaypoint cWaypoint = (ClusterWaypoint) waypoint;
+        int halfWidthLeft = -(markerWidth / 2);
         if (cWaypoint.getSelected())
         {
             g.setColor(Color.WHITE);
-            g.fillOval(-5, -5, MARKER_WIDTH, MARKER_HEIGHT);
+            g.fillOval(halfWidthLeft, halfWidthLeft, markerWidth, markerHeight);
             g.setStroke(new BasicStroke(1f));
             g.setColor(Color.BLACK);
-            g.drawOval(-5, -5, MARKER_WIDTH, MARKER_HEIGHT);
+            g.drawOval(halfWidthLeft, halfWidthLeft, markerWidth, markerHeight);
         } 
         else
         {
@@ -216,16 +223,17 @@ public class CircleWayPointRenderer implements WaypointRenderer
             else
             {
                 g.setColor(Color.BLACK);
-                g.fillRect(-5, -5, MARKER_WIDTH, MARKER_HEIGHT);
+                g.fillRect(halfWidthLeft, halfWidthLeft, markerWidth, markerHeight);
                 g.setStroke(new BasicStroke(1f));
                 g.setColor(Color.BLACK);
-                g.drawRect(-5, -5, MARKER_WIDTH, MARKER_HEIGHT);
+                g.drawRect(halfWidthLeft, halfWidthLeft, markerWidth, markerHeight);
             }
         }
     }
     
     private void paintRegularCircleMarker(Graphics2D g, Waypoint waypoint)
     {
+        int halfWidthLeft = -(markerWidth / 2);
         g.setStroke(new BasicStroke(3f));
             if (this.colorByConfig.isActive())
             {
@@ -235,7 +243,7 @@ public class CircleWayPointRenderer implements WaypointRenderer
             {
                 g.setColor(DEFAULT_LOCATION_COLOR);
             }
-            g.fillOval(-5, -5, this.MARKER_WIDTH, this.MARKER_HEIGHT);
+            g.fillOval(halfWidthLeft, halfWidthLeft, this.markerWidth, this.markerHeight);
     }
 
     protected void setMaxNumMentions(long total)
@@ -274,7 +282,8 @@ public class CircleWayPointRenderer implements WaypointRenderer
         switch (scale)
         {
             case LOG:
-                fraction = Math.log(count + 1) / (Math.log(maxCount + 1));
+                //fraction = Math.log(count + 1) / (Math.log(maxCount + 1));
+                fraction = Math.sqrt(Math.log(count)) / Math.sqrt(Math.log(maxCount));
                 break;
             case LINEAR:
                 fraction = count / (maxCount);
@@ -335,5 +344,20 @@ public class CircleWayPointRenderer implements WaypointRenderer
     void setMaxNumDocs(int maxDocs)
     {
         this.maxNumDocs = maxDocs;
+    }
+
+    ColorByConfig getColorByConfig()
+    {
+        return this.colorByConfig;
+    }
+
+    public int getMarkerWidth()
+    {
+        return this.markerWidth; 
+    }
+    
+    public int getMarkerHeight()
+    {
+        return this.markerHeight;
     }
 }

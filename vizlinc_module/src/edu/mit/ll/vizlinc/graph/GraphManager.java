@@ -3,6 +3,7 @@
 package edu.mit.ll.vizlinc.graph;
 
 import com.google.common.io.Files;
+import com.sun.org.apache.xml.internal.utils.DOMHelper;
 import edu.mit.ll.vizlinc.concurrency.VizLincLongTask;
 import edu.mit.ll.vizlinc.concurrency.VizLincLongTaskListener;
 import edu.mit.ll.vizlinc.model.GraphOperationListener;
@@ -60,6 +61,7 @@ import org.gephi.io.importer.api.EdgeDefault;
 import org.gephi.io.importer.api.ImportController;
 import org.gephi.io.processor.plugin.DefaultProcessor;
 import org.gephi.layout.plugin.openord.OpenOrdLayout;
+import org.gephi.plugins.layout.noverlap.*;
 import org.gephi.partition.api.Partition;
 import org.gephi.partition.api.PartitionController;
 import org.gephi.partition.plugin.NodeColorTransformer;
@@ -85,7 +87,11 @@ import org.gephi.visualization.opengl.text.SizeMode;
 import edu.mit.ll.vizlinc.components.GraphToolsTopComponent;
 import edu.mit.ll.vizlinc.components.PropertiesTopComponent;
 import edu.mit.ll.vizlinc.components.VLQueryTopComponent;
+import edu.mit.ll.vizlinc.graph.layout.community.Cluster;
 import edu.mit.ll.vizlinc.model.DBManager;
+import org.gephi.graph.api.GraphFactory;
+import org.gephi.layout.plugin.random.Random;
+import org.gephi.layout.plugin.random.RandomLayout;
 import org.openide.modules.InstalledFileLocator;
 import org.openide.util.Exceptions;
 import org.openide.util.NbPreferences;
@@ -129,6 +135,10 @@ public class GraphManager implements VLQueryListener {
     private List<PropertyChangeListener> listeners = new ArrayList<PropertyChangeListener>();
     private List<PersonValue> personValues = new ArrayList<PersonValue>();
     private boolean singletonNodesRemoved = false;
+    
+    private Map<Integer,Cluster> idToCurrentCommunities;
+    private Graph clusterGraph;
+    private GraphView clusterGraphView;
 
     /**
      * Subscribe to notifications that graph operations are starting and
@@ -214,14 +224,390 @@ public class GraphManager implements VLQueryListener {
                     // Progress.finish(progressTicket);
                 }
             }
+            
         };
         layoutTask.run(taskListener);
     }
+    
+    private void runNoOverlapLayout(VizLincLongTaskListener taskListener, final double speed) {
+        final VizLincLongTask layoutTask = new VizLincLongTask("Adjusting graph with NoOverlap...") {
+        NoverlapLayout layout = new NoverlapLayout(new NoverlapLayoutBuilder());
+            @Override
+            public void execute() {
+                ProgressTicket progressTicket = this.getProgressTicket();
+                startComputation();
+                try {
+                    layout.resetPropertiesValues();
+                    layout.setSpeed(speed);
+                    layout.setGraphModel(graphModel);
+                    setProgressTicket(progressTicket);
+                    Progress.start(progressTicket);
+                    layout.initAlgo();
+                    while (layout.canAlgo()) {
+                        layout.goAlgo();
+                    }
+                    layout.endAlgo();
+                } finally {
+                    stopComputation();    // Even if cancelled.
+                    // VizLincLongTask does a .finish() by itself, via VizLincLongTaskListener.
+                    // Progress.finish(progressTicket);
+                }
+            }
+            
+        };
+        layoutTask.run(taskListener);
+    }
+    
+//    private void layoutClusterSuperGraph(VizLincLongTaskListener taskListener) {
+//        final VizLincLongTask layoutTask = new VizLincLongTask("Laying out cluster graph") {
+//            RandomLayout layout = new RandomLayout(new Random(), 500);  // OpenOrdLayoutBuilder is not needed and is supplied as null.
+//
+//            @Override
+//            public void execute() {
+//                ProgressTicket progressTicket = this.getProgressTicket();
+//                startComputation();
+//                try {
+//                    layout.resetPropertiesValues();
+//                    layout.setGraphModel(graphModel);
+//                    layout.setProgressTicket(progressTicket);
+//                    Progress.start(progressTicket);
+//                    layout.initAlgo();
+//                    while (layout.canAlgo()) {
+//                        layout.goAlgo();
+//                    }
+//                    layout.endAlgo();
+//                } finally {
+//                    stopComputation();    // Even if cancelled.
+//                    // VizLincLongTask does a .finish() by itself, via VizLincLongTaskListener.
+//                    // Progress.finish(progressTicket);
+//                }
+//            }
+//        };
+//        layoutTask.run(taskListener);
+//    }
 
 
     private void exportGraph(String layoutGraphFileLocation) throws IOException {
         ExportController exportController = Lookup.getDefault().lookup(ExportController.class);
         exportController.exportFile(new File(layoutGraphFileLocation));
+    }
+
+    public void showSuperNodeGraph() 
+    {
+        final VizLincLongTask showSuperGraphTask = new VizLincLongTask("Laying out individual clusters")
+        {
+            boolean cancelled = false;
+
+            boolean cancelled() {
+                return cancelled;
+            }
+
+            @Override
+            public boolean cancel() {
+                cancelled = true;
+                return cancelled;
+            }
+            
+            @Override
+            public void execute() 
+            {
+                startComputation();
+                try 
+                {
+                    Progress.setDisplayName(this.getProgressTicket(), "Laying out individual clusters");
+                    Progress.start(this.getProgressTicket());
+                    computeVisibleClusters();
+                    
+                    /*** DEBUGGING **/
+                    System.out.println("Number of clusters: "  + idToCurrentCommunities.values().size());
+                    NodeData nd = idToCurrentCommunities.get(1).getNodes().get(0).getNodeData();
+                    System.out.println("Test node: " + nd.x() + " - " + nd.y());
+                    /** END **/
+                    layoutEachCluster();
+                    /** Debug**/
+                    System.out.println("Test node: " + nd.x() + " - " + nd.y());
+                    
+                    toSuperNodeGraph();
+                } 
+                catch (Exception ex) 
+                {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(graphToolsWin, "Community layout failed: " + ex);
+                } finally 
+                {
+                    stopComputation();    // Even if cancelled.
+                }
+            }
+
+            private void layoutEachCluster() 
+            {
+                for(Cluster c: idToCurrentCommunities.values())
+                {
+                    c.layoutClusterCircleMultiLevel(0, 0);
+                }
+            }
+        };
+        
+        showSuperGraphTask.run(new VizLincLongTaskListener(){
+            @Override
+            public void whenDone() 
+            {
+                layoutGraph(new VizLincLongTaskListener(){
+
+                    @Override
+                    public void whenDone() 
+                    {
+                        runNoOverlapLayout(new VizLincLongTaskListener()
+                        {
+
+                            @Override
+                            public void whenDone() 
+                            {
+                                revertSuperGraph();
+                            }
+                        }, 5.0);
+                    }
+                 
+                });
+            }
+        });
+    }
+    
+    private void layoutEachCluster(Map<Integer, Cluster> clusters)
+    {
+        GraphView view = null;
+                    GraphController graphController = Lookup.getDefault().lookup(GraphController.class);
+                    GraphModel model = graphController.getModel();
+        for(Cluster c: clusters.values())
+                    {
+                        System.out.println("Laying out cluster #" + c.getNodes().get(0));
+                        
+                        if(view != null)
+                        {
+                            model.destroyView(view);
+                        }
+                        view = model.newView();
+                        Graph clusterGraph = model.getGraph(view);
+                        clusterGraph.clear();
+                        for(Node n: c.getNodes())
+                        {
+                            clusterGraph.addNode(n);
+                        }
+                        model.setVisibleView(view);
+                        //Layout cluster
+//                        OpenOrdLayout layout = new OpenOrdLayout(null);
+//                        layout.resetPropertiesValues();
+//                        layout.setGraphModel(graphModel);
+//                        layout.initAlgo();
+//                        while (layout.canAlgo()) 
+//                        {
+//                            layout.goAlgo();
+//                        }
+//                        layout.endAlgo();
+                    }
+    }
+    
+     private void computeVisibleClusters()
+    {
+        Map<Integer, Cluster> idToCluster = new HashMap<>();
+        
+        for(Node n: visibleGraph.getNodes().toArray())
+        {
+            int clusterId = Integer.valueOf(n.getAttributes().getValue(CLUSTER).toString());
+            System.out.println("Cluster ID: " + clusterId);
+            Cluster c = idToCluster.get(clusterId);
+            if(c == null)
+            {
+                c = new Cluster();
+            }
+            c.add(n);
+            idToCluster.put(clusterId, c);
+        }
+      this.idToCurrentCommunities = idToCluster;  
+    }
+     
+     public void toSuperNodeGraph()
+    {
+        System.out.println("Converting to Super nodes...");
+        //boolean weightbyconnections = true;
+         // Get all the models
+        GraphController graphController = Lookup.getDefault().lookup(GraphController.class);
+        GraphModel model = graphController.getModel();
+        Graph graph = model.getGraph();
+        GraphFactory factory = model.factory();
+
+        // Get a reference to the original nodes and edges
+        Node[] nodes = graph.getNodes().toArray();
+        //Edge[] origEdges = graph.getEdges().toArray();
+        System.out.println("toSuperNodeGraph(): Edges in visible graph " + visibleGraph.getEdges().toArray().length);
+
+        // Add new nodes (based on old graph, one per cluster)
+        for(Cluster c : idToCurrentCommunities.values())
+        {
+            //Get cluster color from one of its nodes.
+            NodeData cNodeData = c.getNodes().get(0).getNodeData();
+            float r = cNodeData.r();
+            float g = cNodeData.g();
+            float b = cNodeData.b();
+            Node n4c = factory.newNode(c.getID().toString());
+            // Make each block node be a little larger than the cluster
+            n4c.getNodeData().setSize(c.getRadius() + 5);
+            //Set the node on the same spot as one of the nodes in this cluster
+            n4c.getNodeData().setX(cNodeData.x());
+            n4c.getNodeData().setY(cNodeData.y());
+            NodeData nodeData = n4c.getNodeData();
+            //Set color of cluster to the color of its nodes
+            nodeData.setR(r);
+            nodeData.setG(g);
+            nodeData.setB(b);
+            
+            graph.addNode(n4c);
+        }
+        
+        //ArrayList<Triple> edgeCache = clustersToEdgeCache.get(clusters);
+        
+//        if(edgeCache != null){
+//            // just add the already computed edges
+//            for(Triple t : edgeCache){
+//                Cluster c_i = (Cluster)t.get1();
+//                Cluster c_j = (Cluster)t.get2(); 
+//                
+//                Node c_i_n = graph.getNode(c_i.getID().toString());
+//                Node c_j_n = graph.getNode(c_j.getID().toString());
+//                Edge ij = factory.newEdge(c_i_n, c_j_n);
+//                ij.setWeight((Float)t.get3());
+//                graph.addEdge(ij);
+//            }
+//        }else{
+           // edgeCache = new ArrayList<Triple>();
+            
+        //** Edges **//
+        System.out.println("Iterating over all edges");
+        
+        long start = System.nanoTime();
+        Set<String> edgesAdded = new HashSet<>();
+        Edge[] visibleEdges = visibleGraph.getEdges().toArray();
+        for(Edge e : visibleEdges)
+        {
+            Node source = e.getSource();
+            //System.out.println("Source id: " + source.getId());
+            Node target = e.getTarget();
+            //System.out.println("Target id: " + target.getId());
+            
+            String sClusIdString = source.getAttributes().getValue(CLUSTER).toString();
+            String tClusIdString = target.getAttributes().getValue(CLUSTER).toString();
+            if(sClusIdString == null || tClusIdString == null)
+            {
+                System.out.println("Null cluster id????");
+            }
+            int sClus = Integer.valueOf(sClusIdString);
+            int tClus = Integer.valueOf(tClusIdString);
+            if(sClus != tClus)
+            {
+                String edgeQuickID = (sClus < tClus)? sClus + "-" + tClus: tClus + "-" + sClus;
+                if(!edgesAdded.contains(edgeQuickID))
+                {
+                    Cluster sCluster = idToCurrentCommunities.get(sClus);
+                    Cluster tCluster = idToCurrentCommunities.get(tClus);
+                    Node sClusterNode = graph.getNode(sCluster.getID().toString());
+                    Node tClusterNode = graph.getNode(tCluster.getID().toString());
+                    Edge ij = factory.newEdge(edgeQuickID, sClusterNode,tClusterNode,1.0f,false);
+                    graph.addEdge(ij);
+                    edgesAdded.add(edgeQuickID);
+                }
+              else
+                {
+                    Edge existingEdge = graph.getEdge(edgeQuickID);
+                    float weight = existingEdge.getWeight();
+                    existingEdge.setWeight(weight + 1.0f);
+                }
+            }
+        }
+        long end = System.nanoTime();
+        System.out.println("Iterating over all edges- DONE: " + (end-start) + " ms");
+        
+            // we need a second loop because all the clusters need to be in the graph
+            // when the edges are created.
+        /*
+            for(int i = 0; i < idToClusters.size(); i++){
+                Cluster c_i = idToClusters.get(i);
+                Node c_i_n = graph.getNode(c_i.getID().toString());
+
+                for(int j = i+1; j < idToClusters.size(); j++){
+                    //compare clusters j and i
+                    Cluster c_j = idToClusters.get(j);
+                    Node c_j_n = graph.getNode(c_j.getID().toString());
+
+                    float weight;
+                    if (weightbyconnections){
+                        weight = (float)c_i.getNumConnections(c_j, 1);
+                    }else{
+                        weight = c_i.getSmallestConnectionWeightBetween(c_j);
+                    }
+                    
+                    int edgeThreshold = 0;
+                    if(weight > edgeThreshold && weight < Float.MAX_VALUE){
+                        Edge ij = factory.newEdge(c_i_n, c_j_n);
+                        ij.setWeight(weight);
+                        graph.addEdge(ij);
+                        //Triple t = new Triple(c_i, c_j, weight);
+                        //edgeCache.add(t);
+                    }
+                }
+            }
+        */
+            //clustersToEdgeCache.put(clusters, edgeCache);
+        //}
+
+        // Create the new view, get the graph
+        
+        //visibleView = model.newView();     //Duplicate main view
+        //Graph subGraph = model.getGraph(visibleView);
+        
+        //Save visible graph
+        clusterGraph = visibleGraph;
+        clusterGraphView = visibleView;
+        
+        //Remove original nodes from new visibleGraph
+        displayWholeGraph();
+        for(Node n: nodes)
+        {
+            visibleGraph.removeNode(n);
+        }
+       // model.setVisibleView(visibleView);
+        System.out.println("Converting to Super nodes: DONE");
+    }
+
+    public void layoutCircular(float centerX, float centerY) 
+    {
+        Graph graph = graphModel.getGraph();
+        Node[] nodes = graph.getNodes().toArray();
+        
+        //place first node in the center
+        Node n0 = nodes[0];
+        NodeData nd = n0.getNodeData();
+        nd.setX(centerX);
+        nd.setY(centerY);
+        double nodeRadius = nd.getRadius();
+        double r = 2* nodeRadius;
+        double theta = 0;
+        double inc = (2* nodeRadius)/r ;
+        for (int i=1; i<nodes.length; i++)
+        {
+            if(theta >= (2*Math.PI))
+            {
+                theta = 0;
+                r = r + (2 * nodeRadius);
+                inc = (2 * nodeRadius)  / r;
+            }
+            Node n = nodes[i];
+            float newX = (float) (r * Math.cos(theta));
+            float newY = (float) (r * Math.sin(theta));
+            nd = n.getNodeData();
+            nd.setX(centerX + newX);
+            nd.setY(centerY + newY);
+            theta+=inc;
+        }
     }
 
     class HighlightInfo {
@@ -820,8 +1206,9 @@ public class GraphManager implements VLQueryListener {
                     }
                     setAttributes(tempCluFile, indexToNodeIdString);
                     graphToolsWin.setGraphNodeColorInfo(NODE_INFO_CLUSTERS);
-
-                } catch (Exception ex) {
+                    graphToolsWin.setEnabledClusterBtn(true);
+                } catch (Exception ex) 
+                {
                     JOptionPane.showMessageDialog(graphToolsWin, "Clustering failed: " + ex);
                 } finally {
                     FileUtils.deleteQuietly(tempDir);  // Delete dir and contents.
@@ -1002,5 +1389,73 @@ public class GraphManager implements VLQueryListener {
             }
         };
         oneHopTask.run();
+    }
+    
+    /**
+     * This will take all the supernodes and draw the clusters around each corresponding node.
+     * This is basically the reverse of makeSuperGraph().
+     */
+    public void revertSuperGraph() {
+        final VizLincLongTask revertSuperGraphTask = new VizLincLongTask("Showing communities...") {
+            boolean cancelled = false;
+
+            boolean cancelled() {
+                return cancelled;
+            }
+
+            @Override
+            public boolean cancel() {
+                cancelled = true;
+                return cancelled;
+            }
+
+            @Override
+            public void execute() {
+                startComputation();
+                try {
+                    //Start progress display
+                    Progress.setDisplayName(this.getProgressTicket(), "Laying out individual clusters");
+                    Progress.start(this.getProgressTicket());
+                    
+                   
+                    
+                    //Undo changes to original graph due to super node graph
+                    Graph origGraph = graphModel.getGraph();
+                    //Replace each cluster node by its corresponding cluster and remove cluster node from original graph
+                    for (Cluster c : idToCurrentCommunities.values()) 
+                    {
+                        Node n = origGraph.getNode(c.getID().toString());
+                        System.out.println("Subs and deleting cluster node: " + n.getId());
+                        System.out.println("Which has # of incident edges: " + visibleGraph.getEdges(n).toArray().length);
+                        float x = n.getNodeData().x();
+                        float y = n.getNodeData().y();
+                        c.displaceCluster(x, y);
+                        origGraph.removeNode(n);
+                    }
+                    
+                     //Restore cluster view
+                    graphModel.destroyView(visibleView);
+                    visibleGraph = clusterGraph;
+                    visibleView = clusterGraphView;
+                    graphModel.setVisibleView(visibleView);
+                    clusterGraph = null;
+                    clusterGraphView = null;
+                    
+                    
+                    //Restore visible graph to original graph by creating a duplicate view
+                    // Reset the original view. (all nodes)
+                    //displayWholeGraph();
+                    //Remove all singleton nodes from visible view (not main view) to be consistent with the result of clustering
+                    //removeSingletonNodes();
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(graphToolsWin, "Resetting communities failed. " + ex);
+                } finally {
+                    stopComputation();    // Even if cancelled.
+                }
+            }
+        };
+        revertSuperGraphTask.run();
     }
 }

@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: org.gephi.plugins.layout.noverlap
+OpenIDE-Module-Localizing-Bundle: org/gephi/plugins/layout/noverlap/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.0
+

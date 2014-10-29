@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<Form version="1.4" maxVersion="1.8" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
+<Form version="1.5" maxVersion="1.8" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
   <NonVisualComponents>
     <Component class="javax.swing.ButtonGroup" name="ColorByRadioBtn">
     </Component>
@@ -48,7 +48,9 @@
               <Component id="alphaRadioBtn" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="jSeparator1" min="-2" pref="2" max="-2" attributes="0"/>
-              <EmptySpace pref="101" max="32767" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="markerSizeSpinner" min="-2" max="-2" attributes="0"/>
+              <EmptySpace pref="56" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -69,9 +71,10 @@
                       <Component id="colorRadioBtn" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="alphaRadioBtn" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
+                  <Component id="markerSizeSpinner" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jXMapKit1" pref="275" max="32767" attributes="0"/>
+              <Component id="jXMapKit1" pref="274" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -209,6 +212,16 @@
       <Properties>
         <Property name="orientation" type="int" value="1"/>
       </Properties>
+    </Component>
+    <Component class="javax.swing.JSpinner" name="markerSizeSpinner">
+      <Properties>
+        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
+          <SpinnerModel initial="10" maximum="15" minimum="0" numberType="java.lang.Integer" stepSize="1" type="number"/>
+        </Property>
+      </Properties>
+      <Events>
+        <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="markerSizeSpinnerChanged"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>

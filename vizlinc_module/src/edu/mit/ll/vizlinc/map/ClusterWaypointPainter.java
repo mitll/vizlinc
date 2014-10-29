@@ -2,7 +2,7 @@
  */
 package edu.mit.ll.vizlinc.map;
 
-
+import edu.mit.ll.vizlinc.components.MapTopComponent;
 import edu.mit.ll.vizlinc.model.LocationValue;
 import edu.mit.ll.vizlinc.utils.Log;
 import java.awt.BasicStroke;
@@ -27,6 +27,8 @@ import org.jdesktop.swingx.mapviewer.DefaultWaypointRenderer;
 import org.jdesktop.swingx.mapviewer.TileFactory;
 import org.jdesktop.swingx.painter.AbstractPainter;
 import edu.mit.ll.vizlinc.components.PropertiesTopComponent;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * Paints waypoints on the JXMapViewer. This is an instance of Painter that only
@@ -37,7 +39,8 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
 {
 
     private WaypointRenderer renderer = new DefaultWaypointRenderer();
-    private Set<Waypoint> waypoints;
+    private List<Waypoint> waypoints;
+    private MapTopComponent.ColorByCriterion waypointsSortedBy;
     private int prevZoom;
     private int minPoints;
     private Map<Integer, Integer> clusterCounters;
@@ -45,6 +48,47 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
     private List<ClusterWaypoint> clickablePoints;
     private Rectangle selectionRectangle;
     private LocationValue nodeToHighligh;
+    //Comparators
+    private Comparator mentionComparator = new Comparator<Waypoint>()
+    {
+        @Override
+        public int compare(Waypoint o1, Waypoint o2)
+        {
+            ClusterWaypoint cw1 = (ClusterWaypoint) o1;
+            ClusterWaypoint cw2 = (ClusterWaypoint) o2;
+            int c1 = cw1.getLocationValue().getNumMentionsShown();
+            int c2 = cw2.getLocationValue().getNumMentionsShown();
+            if (c1 > c2)
+            {
+                return 1;
+            }
+            if (c1 < c2)
+            {
+                return -1;
+            }
+            return 0;
+        }
+    };
+    private Comparator docComparator = new Comparator<Waypoint>()
+    {
+        @Override
+        public int compare(Waypoint o1, Waypoint o2)
+        {
+            ClusterWaypoint cw1 = (ClusterWaypoint) o1;
+            ClusterWaypoint cw2 = (ClusterWaypoint) o2;
+            int c1 = cw1.getLocationValue().getNumDocumentsShown();
+            int c2 = cw2.getLocationValue().getNumDocumentsShown();
+            if (c1 > c2)
+            {
+                return 1;
+            }
+            if (c1 < c2)
+            {
+                return -1;
+            }
+            return 0;
+        }
+    };
 
     /**
      * Creates a new instance of WaypointPainter
@@ -53,12 +97,13 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
     {
         setAntialiasing(true);
         setCacheable(false);
-        waypoints = new HashSet<Waypoint>();
+        waypoints = new LinkedList<Waypoint>();
         prevZoom = -1;
         this.minPoints = 2;
         clusteringOn = false;
         this.clickablePoints = new LinkedList<ClusterWaypoint>();
         nodeToHighligh = null;
+        waypointsSortedBy = null;
     }
 
     /**
@@ -76,51 +121,69 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
      *
      * @return a typed Set of Waypoints
      */
-    public Set<Waypoint> getWaypoints()
+    public List<Waypoint> getWaypoints()
     {
         return waypoints;
     }
 
     /**
-     * Sets the current set of waypoints to paint
+     * Sets the current list of waypoints to paint
      *
-     * @param waypoints the new Set of Waypoints to use
+     * @param waypoints the new list of Waypoints to use
      */
-    public void setWaypoints(Set<Waypoint> waypoints)
+    public void setWaypoints(List<Waypoint> waypoints)
     {
         this.waypoints = waypoints;
+        sortWaypoints();
         int maxMentions = Integer.MIN_VALUE;
         int maxDocs = Integer.MIN_VALUE;
-        
+
         //Calculate max # of mentions
-        for(Waypoint w: waypoints)
+        for (Waypoint w : waypoints)
         {
-            if(w instanceof ClusterWaypoint)
+            if (w instanceof ClusterWaypoint)
             {
                 ClusterWaypoint cw = (ClusterWaypoint) w;
                 int mentions = cw.getLocationValue().getNumMentionsShown();
                 int docCount = cw.getLocationValue().getNumDocumentsShown();
-                if(mentions > maxMentions)
+                if (mentions > maxMentions)
                 {
                     maxMentions = mentions;
                 }
-                if(docCount > maxDocs)
+                if (docCount > maxDocs)
                 {
                     maxDocs = docCount;
                 }
-                
+
             }
         }
         //save in renderer
         CircleWayPointRenderer cwRenderer = getRendererAsCWRenderer();
         cwRenderer.setMaxNumMentions(maxMentions);
         cwRenderer.setMaxNumDocs(maxDocs);
-        
+
     }
-    
+
     public void setColorBy(ColorByConfig config)
     {
+        //If waypoints are not sorted in decreasing frequency according to the parameter
+        //specified in this configuration, sort appropriately.
         getRendererAsCWRenderer().setColorBy(config);
+        sortWaypoints();
+    }
+    
+    /**
+     * Sets the size of the circle marker in map
+     * @param px - radius of circle
+     */
+    public void setMarkerSize(int px)
+    {
+        getRendererAsCWRenderer().setMarkerSize(px);
+    }
+
+    public ColorByConfig getColorBy()
+    {
+        return getRendererAsCWRenderer().getColorByConfig();
     }
 
     /**
@@ -139,7 +202,7 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
             return;
         }
 
-        paintSelectionRectangle(g);
+        //paintSelectionRectangle(g);
 
         int zoom = map.getZoom();
         if (zoom != this.prevZoom && clusteringOn)
@@ -184,18 +247,17 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
         List<Waypoint> highlightedWaypoints = new LinkedList<Waypoint>();
         for (Waypoint w : getWaypoints())
         {
-            if(((ClusterWaypoint)w).isHighlighted())
+            if (((ClusterWaypoint) w).isHighlighted())
             {
                 //Leave it for the end
                 highlightedWaypoints.add(w);
-            }
-            else
+            } else
             {
-                doPaintWaypoint(map, w,  vp2,  vp3, g);
+                doPaintWaypoint(map, w, vp2, vp3, g);
             }
         }
         //Paint highlighed waypoints last so that they appear on top of everything else
-        for(Waypoint w: highlightedWaypoints)
+        for (Waypoint w : highlightedWaypoints)
         {
             doPaintWaypoint(map, w, vp2, vp3, g);
         }
@@ -203,28 +265,28 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
         sb.append("painting all waypoints took: " + (end - start) + " ms\n");
         Log.appendLine(sb.toString());
     }
-    
+
     private void doPaintWaypoint(T map, Waypoint w, Rectangle2D vp2, Rectangle2D vp3, Graphics2D g)
     {
         Point2D point = map.getTileFactory().geoToPixel(w.getPosition(), map.getZoom());
-            if (vp2.contains(point))
-            {
-                int x = (int) (point.getX() - vp2.getX());
-                int y = (int) (point.getY() - vp2.getY());
-                setWaypointBounds(w, x, y);
-                g.translate(x, y);
-                paintWaypoint(w, map, g);
-                g.translate(-x, -y);
-            }
-            if (vp3.contains(point))
-            {
-                int x = (int) (point.getX() - vp3.getX());
-                int y = (int) (point.getY() - vp3.getY());
-                setWaypointBounds(w, x, y);
-                g.translate(x, y);
-                paintWaypoint(w, map, g);
-                g.translate(-x, -y);
-            }
+        if (vp2.contains(point))
+        {
+            int x = (int) (point.getX() - vp2.getX());
+            int y = (int) (point.getY() - vp2.getY());
+            setWaypointBounds(w, x, y);
+            g.translate(x, y);
+            paintWaypoint(w, map, g);
+            g.translate(-x, -y);
+        }
+        if (vp3.contains(point))
+        {
+            int x = (int) (point.getX() - vp3.getX());
+            int y = (int) (point.getY() - vp3.getY());
+            setWaypointBounds(w, x, y);
+            g.translate(x, y);
+            paintWaypoint(w, map, g);
+            g.translate(-x, -y);
+        }
     }
 
     /**
@@ -489,8 +551,8 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
             return;
         }
 
-        int width = CircleWayPointRenderer.MARKER_WIDTH;
-        int height = CircleWayPointRenderer.MARKER_HEIGHT;
+        int width = getRendererAsCWRenderer().getMarkerWidth();
+        int height = getRendererAsCWRenderer().getMarkerHeight();
         int x = centerX - (width / 2);
         int y = centerY - (height / 2);
 
@@ -524,24 +586,45 @@ public class ClusterWaypointPainter<T extends JXMapViewer> extends AbstractPaint
 
     private CircleWayPointRenderer getRendererAsCWRenderer()
     {
-        return ((CircleWayPointRenderer)this.renderer);
+        return ((CircleWayPointRenderer) this.renderer);
     }
 
     public void setAsHighlightedLocations(Set<LocationValue> locationsToHighlight)
     {
-       //Iterate over waypoints and mark them as highlighted if appropriate
-        for(Waypoint w: this.waypoints)
+        //Iterate over waypoints and mark them as highlighted if appropriate
+        for (Waypoint w : this.waypoints)
         {
             ClusterWaypoint cw = (ClusterWaypoint) w;
             LocationValue thisLocation = cw.getLocationValue();
-            if(locationsToHighlight.contains(thisLocation))
+            if (locationsToHighlight.contains(thisLocation))
             {
                 cw.setHighlighted(true);
-            }
-            else
+            } else
             {
                 cw.setHighlighted(false);
-            }        
+            }
+        }
+    }
+
+    private void sortWaypoints()
+    {
+        ColorByConfig config = getColorBy();
+        MapTopComponent.ColorByCriterion criterion = config.getColorByCriterion();
+        if (config.isActive() && !(waypointsSortedBy == config.getColorByCriterion()))
+        {
+            System.out.println("Sorting waypoints");
+            Comparator comp = null;
+            if (criterion == MapTopComponent.ColorByCriterion.MENTION)
+            {
+                comp = mentionComparator;
+            }
+            if (criterion == MapTopComponent.ColorByCriterion.DOCUMENT)
+            {
+                comp = docComparator;
+            }
+
+            Collections.sort(this.waypoints, comp);
+            this.waypointsSortedBy = criterion;
         }
     }
 }

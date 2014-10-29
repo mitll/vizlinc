@@ -4,6 +4,7 @@
 package edu.mit.ll.vizlinc.components;
 
 import edu.mit.ll.vizlinc.graph.GraphManager;
+import edu.mit.ll.vizlinc.graph.layout.community.Cluster;
 import edu.mit.ll.vizlinc.model.DBManager;
 import edu.mit.ll.vizlinc.model.GraphOperationListener;
 import edu.mit.ll.vizlinc.model.LocationValue;
@@ -15,13 +16,21 @@ import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
+import org.gephi.graph.api.Graph;
+import org.gephi.graph.api.GraphController;
+import org.gephi.graph.api.GraphFactory;
+import org.gephi.graph.api.GraphModel;
+import org.gephi.graph.api.GraphView;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
+import org.openide.util.Lookup;
 import org.openide.windows.TopComponent;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
+import org.gephi.graph.api.Node;
 
 /**
  * Displays one-click graph analytics
@@ -114,6 +123,7 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
         jButtonTwoHop = new javax.swing.JButton();
         jButtonShowAllInQuery = new javax.swing.JButton();
         jLabelGraphStatus = new javax.swing.JLabel();
+        clusterLayoutBtn = new javax.swing.JButton();
 
         org.openide.awt.Mnemonics.setLocalizedText(jCheckBoxShowEdges, org.openide.util.NbBundle.getMessage(GraphToolsTopComponent.class, "GraphToolsTopComponent.jCheckBoxShowEdges.text")); // NOI18N
         jCheckBoxShowEdges.addActionListener(new java.awt.event.ActionListener() {
@@ -215,12 +225,23 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
 
         org.openide.awt.Mnemonics.setLocalizedText(jLabelGraphStatus, org.openide.util.NbBundle.getMessage(GraphToolsTopComponent.class, "GraphToolsTopComponent.jLabelGraphStatus.text")); // NOI18N
 
+        org.openide.awt.Mnemonics.setLocalizedText(clusterLayoutBtn, org.openide.util.NbBundle.getMessage(GraphToolsTopComponent.class, "GraphToolsTopComponent.clusterLayoutBtn.text")); // NOI18N
+        clusterLayoutBtn.setEnabled(false);
+        clusterLayoutBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                clusterLayoutBtnActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabelGraphStatus))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(8, 8, 8)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -248,22 +269,20 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
                             .addComponent(jButtonCentrality, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabelLogLambda)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jSpinnerClusterLambda, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jButtonCluster, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabelLogLambda)
+                            .addComponent(jButtonCluster))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(clusterLayoutBtn)
+                            .addComponent(jSpinnerClusterLambda, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jButtonOneHop)
                                 .addGap(23, 23, 23)
                                 .addComponent(jButtonTwoHop))
-                            .addComponent(jButtonShowAllInQuery)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabelGraphStatus)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jButtonShowAllInQuery))))
+                .addContainerGap(55, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -279,7 +298,8 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
                         .addComponent(jButtonCentrality)
                         .addComponent(jButtonCluster)
                         .addComponent(jButtonOneHop)
-                        .addComponent(jButtonTwoHop)))
+                        .addComponent(jButtonTwoHop)
+                        .addComponent(clusterLayoutBtn)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -353,7 +373,14 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
         GraphManager.getInstance().displayNHops(1);
     }//GEN-LAST:event_jButtonOneHopActionPerformed
 
+    private void clusterLayoutBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clusterLayoutBtnActionPerformed
+        GraphManager manager = GraphManager.getInstance();
+        manager.showSuperNodeGraph();
+    }//GEN-LAST:event_clusterLayoutBtnActionPerformed
+
+   
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton clusterLayoutBtn;
     private javax.swing.JButton jButtonCentrality;
     private javax.swing.JButton jButtonCluster;
     private javax.swing.JButton jButtonOneHop;
@@ -439,6 +466,11 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
         displayGraphStatus();
     }
     
+    public void setEnabledClusterBtn(boolean b)
+    {
+        this.clusterLayoutBtn.setEnabled(b);
+    }
+    
     void displayGraphStatus() {
         StringBuilder status = new StringBuilder("<html><b>Graph: </b>");
         status.append(String.valueOf(numberOfNodes));
@@ -488,5 +520,8 @@ public final class GraphToolsTopComponent extends TopComponent implements GraphO
     @Override
     public void queryFinished(List<Document> documents, List<LocationValue> locationsInFacetTree, List<PersonValue> peopleInFacetTree) {
         UIUtils.setEnabledForAllLeafComponents(this, true);
+        //A search changes the graph therefore the cluster graph option shouldn't be available until clustering is 
+        //run again.
+        this.clusterLayoutBtn.setEnabled(false);
     }
 }

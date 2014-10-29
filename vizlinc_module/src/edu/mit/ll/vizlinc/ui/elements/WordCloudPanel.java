@@ -72,6 +72,30 @@ public class WordCloudPanel extends JPanel
         this.mouseHandler = new TagMouseHandler(this);
     }
 
+    @Override
+    public void setEnabled(boolean enabled) 
+    {
+        super.setEnabled(enabled);
+        for(Component c: getComponents())
+        {
+            if(c instanceof TagLabel)
+            {
+                if(enabled)
+                {
+                    c.addMouseListener(this.mouseHandler);
+                }
+                else
+                {
+                    c.removeMouseListener(this.mouseHandler);
+                }
+                c.setEnabled(enabled);
+            }
+        }
+        
+    }
+    
+    
+
    /* @Override
     public Dimension getPreferredSize()
     {
@@ -195,7 +219,6 @@ public class WordCloudPanel extends JPanel
         invalidate();
         validate();
         repaint();
-         
     }
     
     /**

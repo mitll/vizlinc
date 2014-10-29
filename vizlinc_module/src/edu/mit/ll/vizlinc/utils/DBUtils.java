@@ -1,5 +1,6 @@
 package edu.mit.ll.vizlinc.utils;
 
+import com.google.common.io.FileBackedOutputStream;
 import com.tinkerpop.blueprints.Vertex;
 import edu.mit.ll.vizlinc.model.DBManager;
 import edu.mit.ll.vizlinc.model.DateValue;
@@ -24,7 +25,13 @@ import edu.mit.ll.vizlincdb.entity.Mention;
 import edu.mit.ll.vizlincdb.entity.MentionLocation;
 import edu.mit.ll.vizlincdb.entity.OrganizationEntity;
 import edu.mit.ll.vizlincdb.entity.PersonEntity;
+import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +44,8 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
+import org.openide.util.Exceptions;
+import org.openide.windows.OutputWriter;
 
 /**
  * Manages all calls to the database and index.
@@ -173,6 +182,7 @@ public class DBUtils
             
                 
             Log.appendLine(sb.toString());
+            printCountsToFile(facetValues);
             return facetValues;
         } catch (Exception e)
         {
@@ -493,6 +503,18 @@ public class DBUtils
     {
        VizLincRDBMem db = DBManager.getInstance().getDB();
        return db.getMentionLocationsForEntitiesIdInDocument(nonKeyWordEntityIds, id);
+    }
+
+    private static void printCountsToFile(List<LocationValue> facetValues) 
+    {
+        try (PrintWriter out = new PrintWriter("C:\\Users\\jo21372\\Desktop\\locCount.txt")) {
+            for(LocationValue l: facetValues)
+            {
+                out.println(l.getNumMentionsShown());
+            }
+        } catch (FileNotFoundException ex) {
+            Exceptions.printStackTrace(ex);
+        }
     }
     
 }
