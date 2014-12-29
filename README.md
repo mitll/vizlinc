@@ -1,59 +1,11 @@
-This repository is an out of the box development environment for [Gephi](http://gephi.org) plugins. It contains the latest stable version of Gephi modules so you can run a development version of Gephi in seconds. Checkout the [Bootcamp](https://github.com/gephi/gephi-plugins-bootcamp) for examples of the different type of plugins you can create.
-
-Branches contains Gephi Plugins supported by the core team:
-
-- [Neo4j Graph Database Support](https://gephi.org/plugins/neo4j-graph-database-support)
-- [Graph streaming](https://gephi.org/plugins/graph-streaming)
-- [GeoLayout](https://gephi.org/plugins/geolayout/)
-- Python Scripting (In Development)
-
-## Get started
-
-Follow the steps to get the right development environment for developing Gephi plug-ins.
-
-- Download and install the latest version of [Netbeans IDE](http://netbeans.org).
-- Fork and checkout the latest version of this repository:
-
-        git clone git@github.com:username/gephi-plugins.git
-
-- Start Netbeans and Open Project. This folder is automatically recognized as a module suite.
-- Right click on the project and select 'Run'. This starts Gephi.
-
-You can also run Gephi from the command-line using the 'ant run' command.
-
-## Create a plugin
-
-### Create a new module
-
-- In Netbeans, expand the '''Gephi Plugins''' project and right-click on Modules. Select '''Add New...'''
-- Enter the plugin name: '''MyFirstPlugin''' and click '''Next'''.
-- In the next panel, enter a unique codebase name, for instance '''org.myname.myfirstplugin''' and click '''Finish'''.
-- In the Netbeans Project tree, you should see now your module '''MyFirstPlugin'''. Expand it to find its Source Package. Here you will place your code.
-
-### Brand your plugin
-
-- Right-click on your plugin project '''MyFirstPlugin''' and select '''Properties'''.
-- Select '''Display''' on the left panel and fill '''Display Category''', '''Short Description''' and '''Long Description'''.
-- Select '''Packaging''' on the left panel and fill '''License''', '''Homepage''' (if exists) and '''Author''' information.
-- Click on OK to validate changes.
 
 
-### Distribute your plugin ###
+This is the repository for the main VizLinc Application. Vizlinc is a visual analytics platform that takes as input a corpus of text documents, extracts named entities (people, locations, and organizations) and the relations between those entites from the documents, and allows a user to explore the information contained in the documents from both a high-level corpus view point and with respect to more narrow queries. It provides several different visualizations of the data that are linked together in order to provide a more complete analytics capability.
 
-When you successfully tested your plugin, it's time to create a release. Verify that you have latest updates of Gephi JARs:
+There are 2 additional repositories that you will also want to check out if you are interested in working with VizLinc. The VizLinc Ingest repository is located at https://github.com/mitll/vizlinc_ingester. This tool does the heavy lifting analytics to extract information from your documents so that it can be explored through VizLinc. You must ingest your documents with the ingester before using the main VizLinc application. The VizLinc Database repository is located at https://github.com/mitll/vizlinc_db. This is the database framework for VizLinc and details how the Ingest tool and the main VizLinc application interact with eacahother.
 
-- Pull latest changes:
+If you're interested in running the tools, begin by downloading the VizLinc release (https://github.com/mitll/vizlinc/releases/tag/v1.5) and the VizLinc Ingester release (https://github.com/mitll/vizlinc_ingester/releases/tag/ingest). Unzip both releases. First run the ingester executable; this is located at vizlinc_ingest\ingester\dist\vizlinc-ingester.exe. The video guide on how to use the ingester can be found here: https://www.youtube.com/watch?v=rYsvVBLd3tw. After you have run your documents through the ingest process, you're ready to interact with them via VizLinc. The executable for VizLinc can be found in vizlinc\bin\vizlinc64.exe. Before running VizLinc, you will need to make sure that youh have Java properly installed. You can download the latest JDK from http://www.oracle.com/technetwork/java/javase/downloads/index.html. After installing the jdk, you will need to either globally set your jdkhome environment variable to point to the installation or just set it for VizLinc. Tp se it for VizLinc, edit the Vizlinc configuration file. This should be located in the vizlinc/etc folder called vizlinc.conf. In this file, there is a line that says #jdkhome="/path/to/jdk" Uncomment it (remove the leading #) and change this to point to your jdk. For reference, the line would need to look something like: jdkhome=”C:\Program Files\Java\jdk1.7.0_55” Just make sure that the version numbers match the one that you downloaded.
 
-        git checkout master
-        git pull
-        git checkout mybranch
+An introductory video for VizLinc is located at https://www.youtube.com/watch?v=6W5DJ4DoG4Q.
 
-- Test your plugin again in case of an update. If it's okay:
-- Right-click on the project and select '''Package As''' and then '''NMBs'''.
-- Go to the '''build''' folder and find the created '''plugin-release.zip''' file. Individual NBM files (one per each module) are packaged in this zip.
-
-Now you can publish you plugin on the [**Gephi Plugin portal**](http://gephi.org/plugins).
-
-## Plugins Portal
-
-Our [**wiki**](http://wiki.gephi.org/index.php/Plugins_portal) contains a good list of tutorials to code plugins. Also checkout the [Bootcamp](https://github.com/gephi/gephi-plugins-bootcamp) for real examples.
+For anyone who is interested in editing or contributing to the VizLinc source code (or just understanding it better), a paper from the IDEA Workshop at KDD 2014 can be found at https://github.com/mitll/vizlinc/blob/master/documentation/vizlinc.pdf; this paper describes all of the components of VizLinc and showcases its effectiveness on multiple datasets. There are 2 primary paths for integrating your code with VizLinc. The first is to augment the VizLinc Ingester to extract new or different information, or the same information but in a different way. The ingester is written in Groovy and was designed from the ground up to easily have components swapped in and out, so this should be relatively straight forward. The second method of integrating with VizLinc is to augment the main user facing application. This was written as a Gephi plug-in and is consequently Java-based. A great deal of information on writing Gephi plug-ins can be found at http://gephi.github.io/developers/.
